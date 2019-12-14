@@ -24,4 +24,8 @@ def include_package(config):
     # add translations
     config.add_translation_dirs('pyams_template:locales')
 
+    # define configuration settings
+    from pyams_template import template  # pylint: disable=import-outside-toplevel
+    template.CONFIGURATION_SETTINGS = config.registry.settings
+
     config.scan()
