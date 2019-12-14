@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.0.1
+-----
+ - added Pyramid configuration settings to templates configuration
+
 1.0.0
 -----
  - initial release
