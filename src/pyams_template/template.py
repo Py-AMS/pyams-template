@@ -176,11 +176,11 @@ class template_config:  # pylint: disable=invalid-name
             directlyProvides(factory, provides)
 
             # check context
-            context = settings.get('context')
-            if context is None:
+            required_context = settings.get('context')
+            if required_context is None:
                 required = (obj, settings.get('layer', IRequest))
             else:
-                required = (obj, settings.get('layer', IRequest), context)
+                required = (obj, settings.get('layer', IRequest), required_context)
 
             # check registry
             registry = settings.get('registry')
@@ -263,11 +263,11 @@ class layout_config:  # pylint: disable=invalid-name
             directlyProvides(factory, provides)
 
             # check context
-            context = settings.get('context')
-            if context is None:
+            required_context = settings.get('context')
+            if required_context is None:
                 required = (obj, settings.get('layer', IRequest))
             else:
-                required = (obj, settings.get('layer', IRequest), context)
+                required = (obj, settings.get('layer', IRequest), required_context)
 
             # check registry
             registry = settings.get('registry')
