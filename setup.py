@@ -26,7 +26,9 @@ HISTORY = os.path.join(DOCS, 'HISTORY.txt')
 version = '1.0.3'
 long_description = open(README).read() + '\n\n' + open(HISTORY).read()
 
-tests_require = []
+tests_require = [
+    'pyams_utils'
+]
 
 setup(name='pyams_template',
       version=version,
