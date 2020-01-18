@@ -8,6 +8,12 @@ First let's show how to produce content from a view:
 
     >>> from pyramid.testing import setUp, tearDown
     >>> config = setUp()
+
+    >>> from pyams_utils import includeme as include_utils
+    >>> include_utils(config)
+    >>> from pyams_template import includeme as include_template
+    >>> include_template(config)
+
     >>> root = {}
 
     >>> import os, tempfile
