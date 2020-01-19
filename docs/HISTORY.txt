@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.0.5
+-----
+ - refactored code to reduce duplicated lines
+
 1.0.4
 -----
  - modified required arguments of templates registration
