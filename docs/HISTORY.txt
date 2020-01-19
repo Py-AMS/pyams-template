@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.4
+-----
+ - modified required arguments of templates registration
+ - updated doctests
+
 1.0.3
 -----
  - corrected duplicated variable name mismatch in "template_config" and "layout_config"
