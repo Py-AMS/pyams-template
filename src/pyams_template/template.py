@@ -57,7 +57,7 @@ class TemplateFactory:
                                                 translate=queryUtility(IChameleonTranslate))
         self.macro = self.template.macro = macro
 
-    def __call__(self, view, request, context=None):
+    def __call__(self, context, request, view):
         return self.template
 
 
@@ -103,16 +103,15 @@ class ViewTemplate:
         self.name = name
 
     def __call__(self, instance, *args, **keywords):
+        context = instance.context
+        request = instance.request
         registry = instance.request.registry
-        template = registry.queryMultiAdapter((instance, instance.request, instance.context),
-                                              self.provides, name=self.name)
-        if template is None:
-            template = registry.getMultiAdapter((instance, instance.request),
-                                                self.provides, name=self.name)
+        template = registry.getMultiAdapter((context, request, instance),
+                                            self.provides, name=self.name)
 
         keywords.update({
-            'context': instance.context,
-            'request': instance.request,
+            'context': context,
+            'request': request,
             'view': instance,
             'translate': queryUtility(IChameleonTranslate)
         })
@@ -176,11 +175,11 @@ class template_config:  # pylint: disable=invalid-name
             directlyProvides(factory, provides)
 
             # check context
-            required_context = settings.get('context')
-            if required_context is None:
-                required = (obj, settings.get('layer', IRequest))
-            else:
-                required = (obj, settings.get('layer', IRequest), required_context)
+            required = (
+                settings.get('context', None),
+                settings.get('layer', IRequest),
+                obj
+            )
 
             # check registry
             registry = settings.get('registry')
@@ -224,11 +223,11 @@ def override_template(view, **settings):
     provides = settings.get('provides', IContentTemplate)
     directlyProvides(factory, provides)
     # check context
-    context = settings.get('context')
-    if context is None:
-        required = (view, settings.get('layer', IRequest))
-    else:
-        required = (view, settings.get('layer', IRequest), context)
+    required = (
+        settings.get('context', None),
+        settings.get('layer', IRequest),
+        view
+    )
     # check registry
     registry = settings.get('registry')
     if registry is None:
@@ -263,11 +262,11 @@ class layout_config:  # pylint: disable=invalid-name
             directlyProvides(factory, provides)
 
             # check context
-            required_context = settings.get('context')
-            if required_context is None:
-                required = (obj, settings.get('layer', IRequest))
-            else:
-                required = (obj, settings.get('layer', IRequest), required_context)
+            required = (
+                settings.get('context', None),
+                settings.get('layer', IRequest),
+                obj
+            )
 
             # check registry
             registry = settings.get('registry')
@@ -311,11 +310,11 @@ def override_layout(view, **settings):
     provides = settings.get('provides', ILayoutTemplate)
     directlyProvides(factory, provides)
     # check context
-    context = settings.get('context')
-    if context is None:
-        required = (view, settings.get('layer', IRequest))
-    else:
-        required = (view, settings.get('layer', IRequest), context)
+    required = (
+        settings.get('context', None),
+        settings.get('layer', IRequest),
+        view
+    )
     # check registry
     registry = settings.get('registry')
     if registry is None:

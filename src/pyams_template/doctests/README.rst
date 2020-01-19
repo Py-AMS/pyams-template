@@ -45,11 +45,8 @@ We can now register a view class implementing an interface:
     ...         self.request = request
     ...     def __call__(self):
     ...         if self.template is None:
-    ...             template = config.registry.queryMultiAdapter((self, self.request, self.context),
-    ...                                                          IContentTemplate)
-    ...             if template is None:
-    ...                 template = config.registry.getMultiAdapter((self, self.request),
-    ...                                                            IContentTemplate)
+    ...             template = config.registry.getMultiAdapter((self.context, self.request, self),
+    ...                                                        IContentTemplate)
     ...             return template()
     ...         return self.template()
 
@@ -76,8 +73,8 @@ using ZCML:
     <pyams_template.template.TemplateFactory object at ...>
 
     >>> from pyramid.interfaces import IRequest
-    >>> config.registry.registerAdapter(factory, (Interface, IRequest), IContentTemplate)
-    >>> config.registry.getMultiAdapter((view, request), IPageTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, Interface), IContentTemplate)
+    >>> config.registry.getMultiAdapter((root, request, view), IPageTemplate)
     <PyramidPageTemplateFile .../content-template.pt>
 
     >>> print(view())
@@ -87,11 +84,11 @@ Now we can register another template for this view:
 
     >>> my_template = os.path.join(temp_dir, 'my-template.pt')
     >>> with open(my_template, 'w') as file:
-    ...     _ = file.write('<div>This is my template</div>')
+    ...     _ = file.write('<div>This is my custom template</div>')
     >>> factory = TemplateFactory(my_template, 'text/html')
-    >>> config.registry.registerAdapter(factory, (IMyView, IRequest), IContentTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, IMyView), IContentTemplate)
     >>> print(view())
-    <div>This is my template</div>
+    <div>This is my custom template</div>
 
 It's generally easier to use a decorator to register templates:
 
@@ -110,7 +107,7 @@ In testing mode we always have to register template manually because venusian ca
 unit:
 
     >>> factory = TemplateFactory(my_other_template, 'text/html')
-    >>> config.registry.registerAdapter(factory, (MyView2, IRequest), IContentTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, MyView2), IContentTemplate)
 
     >>> view = MyView2(root, request)
     >>> print(view())
@@ -152,7 +149,8 @@ __call__ method to invoke it's template:
     ...         self.request = request
     ...     def __call__(self):
     ...         if self.layout is None:
-    ...             layout = config.registry.getMultiAdapter((self, request), ILayoutTemplate)
+    ...             layout = config.registry.getMultiAdapter((self.context, self.request, self),
+    ...                                                      ILayoutTemplate)
     ...             return layout()
     ...         return self.layout()
     >>> layout_view = LayoutView(root, request)
@@ -167,8 +165,8 @@ We can now define and register a new layout template:
 The template factory is then registered for a view interface and a request layer; this is generally
 done using a decorator:
 
-    >>> config.registry.registerAdapter(factory, (Interface, IRequest), ILayoutTemplate)
-    >>> config.registry.getMultiAdapter((layout_view, request), ILayoutTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, Interface), ILayoutTemplate)
+    >>> config.registry.getMultiAdapter((root, request, layout_view), ILayoutTemplate)
     <PyramidPageTemplateFile .../layout-template.pt>
 
     >>> print(layout_view())
@@ -191,7 +189,7 @@ In testing mode we always have to register layout manually because venusian can'
 unit:
 
     >>> factory = TemplateFactory(my_other_layout, 'text/html')
-    >>> config.registry.registerAdapter(factory, (MyLayoutView2, IRequest), ILayoutTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, MyLayoutView2), ILayoutTemplate)
 
     >>> view = MyLayoutView2(root, request)
     >>> print(view())
@@ -245,13 +243,15 @@ the view content:
     ...         self.attr = 'content updated'
     ...     def render(self):
     ...         if self.template is None:
-    ...             template = config.registry.getMultiAdapter((self, self.request), IContentTemplate)
+    ...             template = config.registry.getMultiAdapter((self.context, self.request, self),
+    ...                                                        IContentTemplate)
     ...             return template(**self.tmpl_dict)
     ...         return self.template(**self.tmpl_dict)
     ...     def __call__(self):
     ...         self.update()
     ...         if self.layout is None:
-    ...             layout = config.registry.getMultiAdapter((self, self.request), ILayoutTemplate)
+    ...             layout = config.registry.getMultiAdapter((self.context, self.request, self),
+    ...                                                      ILayoutTemplate)
     ...             return layout(**self.tmpl_dict)
     ...         return self.layout(**self.tmpl_dict)
 
@@ -259,13 +259,13 @@ the view content:
     >>> with open(template, 'w') as file:
     ...     _ = file.write('''<span>${view.attr}</span>''')
     >>> factory = TemplateFactory(template, 'text/html')
-    >>> config.registry.registerAdapter(factory, (IDocumentView, IRequest), IContentTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, IDocumentView), IContentTemplate)
 
     >>> layout = os.path.join(temp_dir, 'layout.pt')
     >>> with open(layout, 'w') as file:
     ...     _ = file.write('''<html><body><div>${structure:view.render()}</div></body></html>''')
     >>> factory = TemplateFactory(layout, 'text/html')
-    >>> config.registry.registerAdapter(factory, (IDocumentView, IRequest), ILayoutTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, IDocumentView), ILayoutTemplate)
 
     >>> document_view = DocumentView(root, request)
     >>> print(document_view())
@@ -310,7 +310,7 @@ templates; these ones can be registered for any interface:
     ...     """Custom template interface"""
 
     >>> factory = TemplateFactory(content_template, 'text/html')
-    >>> config.registry.registerAdapter(factory, (Interface, IRequest), IMyTemplate)
+    >>> config.registry.registerAdapter(factory, (None, IRequest, Interface), IMyTemplate)
 
     >>> from pyams_template.template import get_view_template
     >>> class IMyTemplateView(Interface):
