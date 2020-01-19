@@ -13,7 +13,6 @@
 """PyAMS_template.metadirectives module
 
 Is module allows to handle <template /> and <layout > directives in ZCML files.
-
 """
 
 import os
@@ -30,7 +29,7 @@ from pyams_template.template import TemplateFactory
 __docformat__ = 'restructuredtext'
 
 
-def template_directive(_context, template, name=u'',
+def template_directive(_context, template, name='',
                        for_=Interface,
                        layer=IRequest,
                        provides=IContentTemplate,
@@ -47,19 +46,13 @@ def template_directive(_context, template, name=u'',
     factory = TemplateFactory(template, content_type, macro)
     directlyProvides(factory, provides)
 
-    if context is not None:
-        for_ = (for_, layer, context)
-    else:
-        for_ = (for_, layer)
+    for_ = (context, layer, for_)
 
     # register the template
-    if name:
-        zcml.adapter(_context, (factory,), provides, for_, name=name)
-    else:
-        zcml.adapter(_context, (factory,), provides, for_)
+    zcml.adapter(_context, (factory,), provides, for_, name=name)
 
 
-def layout_template_directive(_context, template, name=u'',
+def layout_template_directive(_context, template, name='',
                               for_=Interface,
                               layer=IRequest,
                               provides=ILayoutTemplate,
