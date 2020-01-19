@@ -148,10 +148,36 @@ class GetLayoutTemplate(ViewTemplate):
 get_layout_template = GetLayoutTemplate  # pylint: disable=invalid-name
 
 
-class template_config:  # pylint: disable=invalid-name
-    """Class decorator used to declare a view template"""
+def register_template(template, view, settings, provides, registry=None):
+    """Register new template"""
+    if not os.path.isfile(template):
+        raise ConfigurationError("No such file", template)
+
+    content_type = settings.get('content_type', 'text/html')
+    macro = settings.get('macro')
+    factory = TemplateFactory(template, content_type, macro)
+    provides = settings.get('provides', provides)
+    directlyProvides(factory, provides)
+
+    # check context
+    required = (
+        settings.get('context', None),
+        settings.get('layer', IRequest),
+        view
+    )
+    # update registry
+    if registry is None:
+        registry = settings.get('registry')
+        if registry is None:
+            registry = getGlobalSiteManager()
+    registry.registerAdapter(factory, required, provides, settings.get('name', ''))
+
+
+class base_template_config:  # pylint: disable=invalid-name
+    """Base template configuration class"""
 
     venusian = venusian  # for testing injection
+    interface = IPageTemplate  # template interface
 
     def __init__(self, **settings):
         if 'for_' in settings:
@@ -162,34 +188,19 @@ class template_config:  # pylint: disable=invalid-name
     def __call__(self, wrapped):
         settings = self.__dict__.copy()
 
-        def callback(context, name, obj):
-            template = os.path.join(os.path.dirname(inspect.getfile(inspect.getmodule(obj))),
+        def callback(context, name, view):
+            template = os.path.join(os.path.dirname(inspect.getfile(inspect.getmodule(view))),
                                     settings.get('template'))
             if not os.path.isfile(template):
                 raise ConfigurationError("No such file", template)
-
-            content_type = settings.get('content_type', 'text/html')
-            macro = settings.get('macro')
-            factory = TemplateFactory(template, content_type, macro)
-            provides = settings.get('provides', IContentTemplate)
-            directlyProvides(factory, provides)
-
-            # check context
-            required = (
-                settings.get('context', None),
-                settings.get('layer', IRequest),
-                obj
-            )
-
             # check registry
             registry = settings.get('registry')
             if registry is None:
                 config = context.config.with_package(info.module)  # pylint: disable=no-member
                 registry = config.registry
-            registry.registerAdapter(factory, required, provides, settings.get('name', ''))
+            register_template(template, view, settings, self.interface, registry)
 
         info = self.venusian.attach(wrapped, callback, category='pyams_template')
-
         if info.scope == 'class':  # pylint: disable=no-member
             # if the decorator was attached to a method in a class, or
             # otherwise executed at class scope, we need to set an
@@ -199,6 +210,12 @@ class template_config:  # pylint: disable=invalid-name
 
         settings['_info'] = info.codeinfo  # pylint: disable=no-member
         return wrapped
+
+
+class template_config(base_template_config):  # pylint: disable=invalid-name
+    """Class decorator used to declare a view template"""
+
+    interface = IContentTemplate
 
 
 def override_template(view, **settings):
@@ -207,85 +224,20 @@ def override_template(view, **settings):
     This function can be used to override a class template without using ZCML.
     Settings are the same as for @template_config decorator.
     """
-    stack = inspect.stack()[1]
     template = settings.get('template', '')
     if not template:
         raise ConfigurationError("No template specified")
     if not template.startswith('/'):
+        stack = inspect.stack()[1]
         template = os.path.join(os.path.dirname(inspect.getfile(inspect.getmodule(stack[0]))),
                                 template)
-    if not os.path.isfile(template):
-        raise ConfigurationError("No such file", template)
-    content_type = settings.get('content_type', 'text/html')
-    macro = settings.get('macro')
-    # create factory
-    factory = TemplateFactory(template, content_type, macro)
-    provides = settings.get('provides', IContentTemplate)
-    directlyProvides(factory, provides)
-    # check context
-    required = (
-        settings.get('context', None),
-        settings.get('layer', IRequest),
-        view
-    )
-    # check registry
-    registry = settings.get('registry')
-    if registry is None:
-        registry = getGlobalSiteManager()
-    registry.registerAdapter(factory, required, provides, settings.get('name', ''))
+    register_template(template, view, settings, IContentTemplate)
 
 
-class layout_config:  # pylint: disable=invalid-name
+class layout_config(base_template_config):  # pylint: disable=invalid-name
     """Class decorator used to declare a layout template"""
 
-    venusian = venusian  # for testing injection
-
-    def __init__(self, **settings):
-        if 'for_' in settings:
-            if settings.get('context') is None:
-                settings['context'] = settings['for_']
-        self.__dict__.update(settings)
-
-    def __call__(self, wrapped):
-        settings = self.__dict__.copy()
-
-        def callback(context, name, obj):
-            template = os.path.join(os.path.dirname(inspect.getfile(inspect.getmodule(obj))),
-                                    settings.get('template'))
-            if not os.path.isfile(template):
-                raise ConfigurationError("No such file", template)
-
-            content_type = settings.get('content_type', 'text/html')
-            macro = settings.get('macro')
-            factory = TemplateFactory(template, content_type, macro)
-            provides = settings.get('provides', ILayoutTemplate)
-            directlyProvides(factory, provides)
-
-            # check context
-            required = (
-                settings.get('context', None),
-                settings.get('layer', IRequest),
-                obj
-            )
-
-            # check registry
-            registry = settings.get('registry')
-            if registry is None:
-                config = context.config.with_package(info.module)  # pylint: disable=no-member
-                registry = config.registry
-            registry.registerAdapter(factory, required, provides, settings.get('name', ''))
-
-        info = self.venusian.attach(wrapped, callback, category='pyams_template')
-
-        if info.scope == 'class':  # pylint: disable=no-member
-            # if the decorator was attached to a method in a class, or
-            # otherwise executed at class scope, we need to set an
-            # 'attr' into the settings if one isn't already in there
-            if settings.get('attr') is None:
-                settings['attr'] = wrapped.__name__
-
-        settings['_info'] = info.codeinfo  # pylint: disable=no-member
-        return wrapped
+    interface = ILayoutTemplate
 
 
 def override_layout(view, **settings):
@@ -294,29 +246,11 @@ def override_layout(view, **settings):
     This function can be used to override a class layout template without using ZCML.
     Settings are the same as for @layout_config decorator.
     """
-    stack = inspect.stack()[1]
     template = settings.get('template', '')
     if not template:
         raise ConfigurationError("No template specified")
     if not template.startswith('/'):
+        stack = inspect.stack()[1]
         template = os.path.join(os.path.dirname(inspect.getfile(inspect.getmodule(stack[0]))),
                                 template)
-    if not os.path.isfile(template):
-        raise ConfigurationError("No such file", template)
-    content_type = settings.get('content_type', 'text/html')
-    macro = settings.get('macro')
-    # create factory
-    factory = TemplateFactory(template, content_type, macro)
-    provides = settings.get('provides', ILayoutTemplate)
-    directlyProvides(factory, provides)
-    # check context
-    required = (
-        settings.get('context', None),
-        settings.get('layer', IRequest),
-        view
-    )
-    # check registry
-    registry = settings.get('registry')
-    if registry is None:
-        registry = getGlobalSiteManager()
-    registry.registerAdapter(factory, required, provides, settings.get('name', ''))
+    register_template(template, view, settings, ILayoutTemplate)
