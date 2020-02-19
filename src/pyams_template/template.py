@@ -128,9 +128,7 @@ class GetContentTemplate(ViewTemplate):
     """Page template getter class"""
 
     def __init__(self, name=''):
-        # pylint: disable=super-init-not-called
-        self.provides = IContentTemplate
-        self.name = name
+        super(GetContentTemplate, self).__init__(IContentTemplate, name)
 
 
 get_content_template = GetContentTemplate  # pylint: disable=invalid-name
@@ -140,9 +138,7 @@ class GetLayoutTemplate(ViewTemplate):
     """Layout template getter class"""
 
     def __init__(self, name=''):
-        # pylint: disable=super-init-not-called
-        self.provides = ILayoutTemplate
-        self.name = name
+        super(GetLayoutTemplate, self).__init__(ILayoutTemplate, name)
 
 
 get_layout_template = GetLayoutTemplate  # pylint: disable=invalid-name
