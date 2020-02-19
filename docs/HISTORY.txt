@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.0.6
+-----
+ - updated super-call of layout and template getters
+
 1.0.5
 -----
  - refactored code to reduce duplicated lines
