@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.1.0
+-----
+ - removed ZCML directives
+ - updated doctests
+
 1.0.6
 -----
  - updated super-call of layout and template getters
