@@ -7,7 +7,7 @@ This doctests are based on z3c.template doctests.
 First let's show how to produce content from a view:
 
     >>> from pyramid.testing import setUp, tearDown
-    >>> config = setUp()
+    >>> config = setUp(hook_zca=True)
 
     >>> from pyams_utils import includeme as include_utils
     >>> include_utils(config)
@@ -125,6 +125,16 @@ We can also always override a template without creating another class:
     ...     """Layer marker interface"""
     >>> directlyProvides(request, *(IMyLayer,))
     >>> override_template(registry=config.registry, view=MyView2,
+    ...                   layer=IMyLayer)
+    Traceback (most recent call last):
+    ...
+    pyramid.exceptions.ConfigurationError: No template specified
+    >>> override_template(registry=config.registry, view=MyView2,
+    ...                   template='/missing-filename.pt', layer=IMyLayer)
+    Traceback (most recent call last):
+    ...
+    pyramid.exceptions.ConfigurationError: ('No such file', '/missing-filename.pt')
+    >>> override_template(registry=config.registry, view=MyView2,
     ...                   template=overriden_template, layer=IMyLayer)
     >>> print(view())
     <div>This is an overriden content</div>
@@ -202,6 +212,7 @@ It's also possible to set the layout template directly, without using an adapter
     >>> @implementer(ILayoutView)
     ... class LayoutViewWithTemplate(LayoutView):
     ...     layout = PyramidPageTemplateFile(my_other_layout, macro=None)
+
     >>> layout_view = LayoutViewWithTemplate(root, request)
     >>> print(layout_view())
     <div>This is my layout template for my view 2</div>
@@ -212,6 +223,17 @@ We can also always override a layout without creating another class:
     >>> overriden_layout = os.path.join(temp_dir, 'override-layout.pt')
     >>> with open(overriden_layout, 'w') as file:
     ...     _ = file.write('<div>This is an overriden layout</div>')
+
+    >>> override_layout(registry=config.registry, view=MyLayoutView2,
+    ...                 layer=IMyLayer)
+    Traceback (most recent call last):
+    ...
+    pyramid.exceptions.ConfigurationError: No template specified
+    >>> override_layout(registry=config.registry, view=MyLayoutView2,
+    ...                 template='/missing-filename.pt', layer=IMyLayer)
+    Traceback (most recent call last):
+    ...
+    pyramid.exceptions.ConfigurationError: ('No such file', '/missing-filename.pt')
 
     >>> override_layout(registry=config.registry, view=MyLayoutView2,
     ...                 template=overriden_layout, layer=IMyLayer)
@@ -326,6 +348,50 @@ templates; these ones can be registered for any interface:
     >>> my_view = MyTemplateView(root, request)
     >>> print(my_view.template())
     <div>Base template content</div>
+
+
+Templates registration decorator
+--------------------------------
+
+Templates can be registered in a single step using the "template_config" and "layout_config"
+decorators:
+
+    >>> my_registered_template = os.path.join(temp_dir, 'my-registered-template.pt')
+    >>> with open(my_registered_template, 'w') as file:
+    ...     _ = file.write('<div>This is a registered template for view 2</div>')
+
+    >>> class IMyContent(Interface):
+    ...     """Content marker interface"""
+
+    >>> @implementer(IMyContent)
+    ... class Content:
+    ...     """Content class"""
+
+    >>> class MyContentView:
+    ...     template = get_view_template()
+    ...     def __init__(self, context, request):
+    ...         self.context = context
+    ...         self.request = request
+
+    >>> from pyams_template.template import template_config, layout_config
+    >>> from pyams_utils.testing import call_decorator
+
+    >>> call_decorator(config, template_config, MyContentView,
+    ...                template='/missing-filename.pt',
+    ...                for_=IMyContent)
+    Traceback (most recent call last):
+    ...
+    pyramid.exceptions.ConfigurationError: ('No such file', '/missing-filename.pt')
+
+    >>> call_decorator(config, template_config, MyContentView,
+    ...                template=my_registered_template,
+    ...                for_=IMyContent)
+
+    >>> content = Content()
+    >>> print(MyContentView(root, request).template())
+    <div>demo layout</div>
+    >>> print(MyContentView(content, request).template())
+    <div>This is a registered template for view 2</div>
 
 
 Named templates
