@@ -26,9 +26,7 @@ HISTORY = os.path.join(DOCS, 'HISTORY.txt')
 version = '1.1.0'
 long_description = open(README).read() + '\n\n' + open(HISTORY).read()
 
-tests_require = [
-    'pyams_utils'
-]
+tests_require = []
 
 setup(name='pyams_template',
       version=version,
@@ -61,6 +59,7 @@ setup(name='pyams_template',
       install_requires=[
           'setuptools',
           # -*- Extra requirements: -*-
+          'pyams_utils',
           'pyramid',
           'pyramid_chameleon',
           'venusian',
