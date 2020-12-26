@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.2
+-----
+ - updated Travis configuration
+
 1.1.1
 -----
  - updated global registry access
