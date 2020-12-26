@@ -28,10 +28,10 @@ from pyramid.interfaces import IRequest
 from pyramid_chameleon.interfaces import IChameleonTranslate
 from pyramid_chameleon.zpt import PyramidPageTemplateFile
 from zope.component import queryUtility
-from zope.component.globalregistry import getGlobalSiteManager
 from zope.interface import directlyProvides
 
 from pyams_template.interfaces import IContentTemplate, ILayoutTemplate, IPageTemplate
+from pyams_utils.registry import get_pyramid_registry
 
 
 __docformat__ = 'restructuredtext'
@@ -165,7 +165,7 @@ def register_template(template, view, settings, provides, registry=None):
     if registry is None:
         registry = settings.get('registry')
         if registry is None:
-            registry = getGlobalSiteManager()
+            registry = get_pyramid_registry()
     registry.registerAdapter(factory, required, provides, settings.get('name', ''))
 
 
